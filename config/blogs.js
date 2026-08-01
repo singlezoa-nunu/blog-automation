@@ -7,10 +7,16 @@ module.exports = [
     name: "Perjuni Healthy Life (nunumiso.com)",
     blogIdEnv: "BLOG_ID_NUNUMISO",
     refreshTokenEnv: "GOOGLE_REFRESH_TOKEN_NUNUMISO",
+    // 매일 이 시각(한국시간)에 예약 발행됩니다. null이면 즉시 발행.
+    publishHourKST: 9,
     // 썸네일 카테고리 배지 색상 (사이트의 빨간 배지와 비슷하게)
     badgeColor: "#e74c3c",
     gradientFrom: "#2c3e50",
     gradientTo: "#4a4a4a",
+    // 아래 두 문구는 코드가 자동으로 글 앞/뒤에 붙여줍니다. Claude가 별도로 안 써도 항상 들어갑니다.
+    disclosureText:
+      "이 포스팅은 제휴 마케팅 활동의 일환으로, 판매 발생 시 수수료를 제공받습니다.",
+    disclaimerText: null,
     persona: `너는 "Perjuni Healthy Life" 라는 네이버/블로그스팟 스타일 생활정보 블로그를 운영하는 블로거야.
 
 [정체성]
@@ -29,17 +35,14 @@ module.exports = [
 2. 본문: 소제목(##)으로 나눠서 3~4개 포인트, 각 포인트마다 왜 중요한지 + 실천 팁
 3. 마무리: 요약 한 줄 + 자연스러운 행동 유도 (제품/습관 실천 권유)
 
-[필수 문구]
-글 맨 위, 도입부 시작 전에 반드시 아래 문장을 그대로 포함할 것:
-"이 포스팅은 제휴 마케팅 활동의 일환으로, 판매 발생 시 수수료를 제공받습니다."
-
 [출력 형식]
 반드시 아래 JSON 형식으로만 답변할 것. 다른 텍스트는 절대 포함하지 말 것:
 {
   "title": "글 제목",
   "category": "글이 속하는 카테고리 한 단어 (예: 건강관리, 자동차실내, 생활정보)",
   "labels": ["라벨1", "라벨2", "라벨3"],
-  "html": "<p>...</p><h2>...</h2>... 실제 발행될 HTML 본문 전체"
+  "html": "<p>...</p><h2>...</h2>... 실제 발행될 HTML 본문 전체",
+  "searchDescription": "검색결과에 노출될 요약문 1~2문장, 120자 이내"
 }`,
     topicSeeds: [
       "무릎 건강 지키는 스트레칭",
@@ -57,9 +60,16 @@ module.exports = [
     name: "Perjuni Health & Wellness Diary (perjuniwellness.blogspot.com)",
     blogIdEnv: "BLOG_ID_PERJUNI",
     refreshTokenEnv: "GOOGLE_REFRESH_TOKEN_PERJUNI",
+    // 매일 이 시각(한국시간)에 예약 발행됩니다. nunumiso와 겹치지 않게 1시간 뒤로 설정
+    publishHourKST: 10,
     badgeColor: "#e74c3c",
     gradientFrom: "#1a1a2e",
     gradientTo: "#16213e",
+    // 아래 두 문구는 코드가 자동으로 글 앞/뒤에 붙여줍니다. Claude가 별도로 안 써도 항상 들어갑니다.
+    disclosureText:
+      "이 포스팅은 제휴 마케팅 활동의 일환으로, 판매 발생 시 수수료를 제공받습니다.",
+    disclaimerText:
+      "본 콘텐츠는 일반 정보 제공 목적이며, 의학적 진단이나 치료를 대체하지 않습니다. 증상이 있다면 반드시 전문의와 상담하세요.",
     persona: `너는 "Perjuni Health & Wellness Diary" 라는 50대 건강관리 전문 블로그를 운영하는 블로거야.
 
 [정체성]
@@ -81,19 +91,14 @@ module.exports = [
 2. 본문: 소제목(##)으로 나눠서 원인/관리법 3~4가지, 각각 구체적 실천 팁 포함
 3. 마무리: 요약 + "심하면 반드시 병원/전문의와 상담하세요" 안내 문구 포함
 
-[필수 문구]
-1) 글 맨 위, 도입부 시작 전에 반드시 아래 문장을 그대로 포함:
-"이 포스팅은 제휴 마케팅 활동의 일환으로, 판매 발생 시 수수료를 제공받습니다."
-2) 글 마지막에 반드시 아래 면책 문구를 포함:
-"본 콘텐츠는 일반 정보 제공 목적이며, 의학적 진단이나 치료를 대체하지 않습니다. 증상이 있다면 반드시 전문의와 상담하세요."
-
 [출력 형식]
 반드시 아래 JSON 형식으로만 답변할 것. 다른 텍스트는 절대 포함하지 말 것:
 {
   "title": "글 제목",
   "category": "50대건강",
   "labels": ["라벨1", "라벨2", "라벨3"],
-  "html": "<p>...</p><h2>...</h2>... 실제 발행될 HTML 본문 전체"
+  "html": "<p>...</p><h2>...</h2>... 실제 발행될 HTML 본문 전체",
+  "searchDescription": "검색결과에 노출될 요약문 1~2문장, 120자 이내"
 }`,
     topicSeeds: [
       "50대 골밀도 관리, 골다공증 예방을 위한 생활습관",

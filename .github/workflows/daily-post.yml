@@ -2,8 +2,9 @@ name: 매일 블로그 자동 발행
 
 on:
   schedule:
-    # 매일 00:00 UTC = 한국시간 오전 9시
-    - cron: "0 0 * * *"
+    # 매일 15:00 UTC = 한국시간 00:00 (자정). 이렇게 미리 만들어둬야
+    # config/blogs.js에 설정된 오전 9시/10시 예약 발행 시각보다 여유있게 준비됩니다.
+    - cron: "0 15 * * *"
   workflow_dispatch: {} # GitHub 화면에서 수동으로 "지금 실행" 버튼도 누를 수 있게 해줌
 
 permissions:
@@ -24,6 +25,9 @@ jobs:
       - name: 필요한 패키지 설치
         run: npm install
 
+      - name: 한글 폰트 설치 (썸네일 텍스트 렌더링용)
+        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+
       - name: 글 자동 생성 및 발행
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -33,12 +37,13 @@ jobs:
           GOOGLE_REFRESH_TOKEN_PERJUNI: ${{ secrets.GOOGLE_REFRESH_TOKEN_PERJUNI }}
           BLOG_ID_NUNUMISO: ${{ secrets.BLOG_ID_NUNUMISO }}
           BLOG_ID_PERJUNI: ${{ secrets.BLOG_ID_PERJUNI }}
+          GITHUB_REPO: ${{ github.repository }}
         run: node main.js
 
-      - name: 주제 사용 기록 다시 저장하기
+      - name: 썸네일 이미지 + 주제 사용 기록 다시 저장하기
         run: |
           git config user.name "blog-automation-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add data/used-topics.json
-          git diff --cached --quiet || git commit -m "chore: 오늘의 발행 주제 기록"
+          git add data/used-topics.json images/
+          git diff --cached --quiet || git commit -m "chore: 오늘의 발행 글/썸네일 기록"
           git push
