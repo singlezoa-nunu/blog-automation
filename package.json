@@ -1,0 +1,15 @@
+{
+  "name": "blog-automation",
+  "version": "1.0.0",
+  "description": "Claude + Blogger API로 블로그 글을 완전 자동 생성/발행",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "auth": "node auth-setup.js",
+    "post": "node main.js"
+  },
+  "dependencies": {
+    "google-auth-library": "^9.14.1",
+    "dotenv": "^16.4.5"
+  }
+}

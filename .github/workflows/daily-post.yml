@@ -1,0 +1,44 @@
+name: 매일 블로그 자동 발행
+
+on:
+  schedule:
+    # 매일 00:00 UTC = 한국시간 오전 9시
+    - cron: "0 0 * * *"
+  workflow_dispatch: {} # GitHub 화면에서 수동으로 "지금 실행" 버튼도 누를 수 있게 해줌
+
+permissions:
+  contents: write # 주제 사용 기록 파일을 다시 커밋하기 위해 필요
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 코드 가져오기
+        uses: actions/checkout@v4
+
+      - name: Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 필요한 패키지 설치
+        run: npm install
+
+      - name: 글 자동 생성 및 발행
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN_NUNUMISO: ${{ secrets.GOOGLE_REFRESH_TOKEN_NUNUMISO }}
+          GOOGLE_REFRESH_TOKEN_PERJUNI: ${{ secrets.GOOGLE_REFRESH_TOKEN_PERJUNI }}
+          BLOG_ID_NUNUMISO: ${{ secrets.BLOG_ID_NUNUMISO }}
+          BLOG_ID_PERJUNI: ${{ secrets.BLOG_ID_PERJUNI }}
+        run: node main.js
+
+      - name: 주제 사용 기록 다시 저장하기
+        run: |
+          git config user.name "blog-automation-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/used-topics.json
+          git diff --cached --quiet || git commit -m "chore: 오늘의 발행 주제 기록"
+          git push
