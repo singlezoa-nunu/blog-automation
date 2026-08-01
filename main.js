@@ -39,7 +39,9 @@ function buildImageUrl(relativePath) {
   const repo = process.env.GITHUB_REPO;
   const branch = process.env.GITHUB_BRANCH || "main";
   if (!repo) return null;
-  return `https://raw.githubusercontent.com/${repo}/${branch}/${relativePath}`;
+  // 파일명에 한글 등이 포함되어 있어도 안전하게 동작하도록 경로를 인코딩 (슬래시는 유지)
+  const encodedPath = relativePath.split("/").map(encodeURIComponent).join("/");
+  return `https://raw.githubusercontent.com/${repo}/${branch}/${encodedPath}`;
 }
 
 function buildRelatedPostsHtml(posts) {
