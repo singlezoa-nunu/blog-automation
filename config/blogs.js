@@ -7,8 +7,14 @@ module.exports = [
     name: "Perjuni Healthy Life (nunumiso.com)",
     blogIdEnv: "BLOG_ID_NUNUMISO",
     refreshTokenEnv: "GOOGLE_REFRESH_TOKEN_NUNUMISO",
-    // 매일 이 시각(한국시간)에 예약 발행됩니다. null이면 즉시 발행.
-    publishHourKST: 9,
+    // 하루에 이 시각들(한국시간)에 맞춰 각각 한 편씩 예약 발행됩니다.
+    publishSchedule: [
+      { hour: 8, minute: 30 },
+      { hour: 21, minute: 0 },
+    ],
+    // 글 끝에 자동으로 붙는 구매 유도 문구. 이 문구를 Blogger 에디터에서 선택해서
+    // 실제 상품 링크(쿠팡파트너스 등)를 걸어주시면 됩니다.
+    ctaText: "👉 오늘의 추천 제품 보러가기",
     // 썸네일 카테고리 배지 색상 (사이트의 빨간 배지와 비슷하게)
     badgeColor: "#e74c3c",
     gradientFrom: "#2c3e50",
@@ -60,8 +66,12 @@ module.exports = [
     name: "Perjuni Health & Wellness Diary (perjuniwellness.blogspot.com)",
     blogIdEnv: "BLOG_ID_PERJUNI",
     refreshTokenEnv: "GOOGLE_REFRESH_TOKEN_PERJUNI",
-    // 매일 이 시각(한국시간)에 예약 발행됩니다. nunumiso와 겹치지 않게 1시간 뒤로 설정
-    publishHourKST: 10,
+    // 하루에 이 시각들(한국시간)에 맞춰 각각 한 편씩 예약 발행됩니다.
+    publishSchedule: [
+      { hour: 8, minute: 30 },
+      { hour: 21, minute: 0 },
+    ],
+    ctaText: "👉 오늘의 추천 제품 보러가기",
     badgeColor: "#e74c3c",
     gradientFrom: "#1a1a2e",
     gradientTo: "#16213e",
