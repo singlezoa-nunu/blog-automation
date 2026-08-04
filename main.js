@@ -5,7 +5,7 @@ const path = require("path");
 const blogs = require("./config/blogs");
 const { generateContent, generateTopicIdea } = require("./lib/generateContent");
 const { saveThumbnail } = require("./lib/generateThumbnail");
-const { postToBlogger, listRecentPosts } = require("./lib/postToBlogger");
+const { postToBlogger, listRecentPosts, listAllPostTitles } = require("./lib/postToBlogger");
 
 const USED_TOPICS_PATH = path.join(__dirname, "data", "used-topics.json");
 const IMAGES_DIR = path.join(__dirname, "images");
@@ -19,16 +19,21 @@ function saveUsedTopics(data) {
   fs.writeFileSync(USED_TOPICS_PATH, JSON.stringify(data, null, 2), "utf-8");
 }
 
-async function pickTopic(blog, usedTopics, apiKey) {
+async function pickTopic(blog, usedTopics, existingTitles, apiKey) {
   const used = usedTopics[blog.label] || [];
-  const available = blog.topicSeeds.filter((t) => !used.includes(t));
+  // 이미 다룬 주제(자동화가 기록한 것) + 자동화 이전부터 있던 기존 글 제목까지 모두 피해야 할 목록
+  const avoidList = [...used, ...existingTitles];
+
+  const available = blog.topicSeeds.filter(
+    (t) => !avoidList.some((a) => a.includes(t) || t.includes(a))
+  );
 
   if (available.length > 0) {
     return available[0];
   }
 
   console.log(`   (준비된 주제를 다 썼어요. Claude에게 새 주제를 요청합니다...)`);
-  return generateTopicIdea({ persona: blog.persona, usedTopics: used, apiKey });
+  return generateTopicIdea({ persona: blog.persona, usedTopics: avoidList, apiKey });
 }
 
 // 썸네일을 실제로 브라우저에서 볼 수 있는 주소로 바꿔줌.
@@ -59,19 +64,19 @@ function buildRelatedPostsHtml(posts) {
 </div>`;
 }
 
-// publishHourKST(예: 9)를 기준으로, "오늘 그 시각"이 아직 안 지났으면 오늘, 이미 지났으면 내일로
+// { hour, minute } (한국시간) 기준으로, "오늘 그 시각"이 아직 안 지났으면 오늘, 이미 지났으면 내일로
 // 계산해서 Blogger가 이해하는 ISO 문자열을 만듭니다. (한국시간 = UTC+9)
-function computeScheduledPublishDate(publishHourKST) {
-  if (publishHourKST === null || publishHourKST === undefined) return null;
+function computeScheduledPublishDate(schedule) {
+  if (!schedule) return null;
+  const { hour, minute = 0 } = schedule;
 
   const now = new Date();
   const kstNowMs = now.getTime() + 9 * 60 * 60 * 1000;
   const kstNow = new Date(kstNowMs);
 
   const target = new Date(
-    Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth(), kstNow.getUTCDate(), publishHourKST, 0, 0)
+    Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth(), kstNow.getUTCDate(), hour, minute, 0)
   );
-  // target은 지금 "KST 기준 시각"을 UTC 필드에 그대로 넣은 것이므로, 실제 UTC로 바꾸려면 9시간을 빼야 함
   let targetUtcMs = target.getTime() - 9 * 60 * 60 * 1000;
 
   if (targetUtcMs <= now.getTime()) {
@@ -81,9 +86,8 @@ function computeScheduledPublishDate(publishHourKST) {
   return new Date(targetUtcMs).toISOString();
 }
 
-async function runForBlog(blog, usedTopics, apiKey) {
-  console.log(`\n=== [${blog.name}] 처리 시작 ===`);
-
+// 블로그 하나의, 예약 시간 슬롯 하나에 대해 글 하나를 생성/발행
+async function runForBlogSlot(blog, schedule, usedTopics, existingTitles, apiKey) {
   const blogId = process.env[blog.blogIdEnv];
   const refreshToken = process.env[blog.refreshTokenEnv];
 
@@ -92,11 +96,16 @@ async function runForBlog(blog, usedTopics, apiKey) {
     return;
   }
 
-  const topic = await pickTopic(blog, usedTopics, apiKey);
+  const topic = await pickTopic(blog, usedTopics, existingTitles, apiKey);
   console.log(`   주제: ${topic}`);
+
+  // 같은 실행(run) 안에서 다음 슬롯이 같은 주제를 다시 고르지 않도록 바로 기록
+  if (!usedTopics[blog.label]) usedTopics[blog.label] = [];
+  usedTopics[blog.label].push(topic);
 
   console.log("   Claude로 글 작성 중...");
   const content = await generateContent({ persona: blog.persona, topic, apiKey });
+  existingTitles.push(content.title);
 
   console.log("   썸네일 이미지 생성 중...");
   const relativeImagePath = saveThumbnail({
@@ -135,15 +144,20 @@ async function runForBlog(blog, usedTopics, apiKey) {
   const disclaimerBlock = blog.disclaimerText
     ? `<p style="color:#888; font-size:13px; margin-top:24px;">${blog.disclaimerText}</p>`
     : "";
+  // 구매 유도 문구. 이 문장을 Blogger 에디터에서 선택해 실제 상품 링크를 걸어주세요.
+  const ctaBlock = blog.ctaText
+    ? `<p style="margin-top:24px; font-size:17px; font-weight:bold;">${blog.ctaText}</p>`
+    : "";
 
   const fullHtml = `${imageBlock}
 ${disclosureBlock}
 ${content.html}
+${ctaBlock}
 ${relatedHtml}
 ${disclaimerBlock}`;
 
   console.log("   Blogger에 발행 중...");
-  const scheduledPublishDate = computeScheduledPublishDate(blog.publishHourKST);
+  const scheduledPublishDate = computeScheduledPublishDate(schedule);
   if (scheduledPublishDate) {
     console.log(`   (예약 발행 시각: ${scheduledPublishDate})`);
   }
@@ -165,9 +179,36 @@ ${disclaimerBlock}`;
   });
 
   console.log(`   ✅ ${scheduledPublishDate ? "예약 완료" : "발행 완료"}: ${result.url}`);
+}
 
-  if (!usedTopics[blog.label]) usedTopics[blog.label] = [];
-  usedTopics[blog.label].push(topic);
+async function runForBlog(blog, usedTopics, apiKey) {
+  console.log(`\n=== [${blog.name}] 처리 시작 ===`);
+
+  const blogId = process.env[blog.blogIdEnv];
+  const refreshToken = process.env[blog.refreshTokenEnv];
+
+  let existingTitles = [];
+  if (blogId && refreshToken) {
+    console.log("   기존 글 목록 조회 중... (주제 중복 방지)");
+    existingTitles = await listAllPostTitles({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      refreshToken,
+      blogId,
+    });
+    console.log(`   기존 글 ${existingTitles.length}개 확인함`);
+  }
+
+  const schedules = blog.publishSchedule && blog.publishSchedule.length > 0 ? blog.publishSchedule : [null];
+
+  for (const schedule of schedules) {
+    try {
+      await runForBlogSlot(blog, schedule, usedTopics, existingTitles, apiKey);
+    } catch (err) {
+      console.error(`   ❌ [${blog.name}] 슬롯 처리 중 오류: ${err.message}`);
+      // 이 슬롯이 실패해도 같은 블로그의 다음 슬롯/다른 블로그는 계속 진행
+    }
+  }
 }
 
 async function main() {
@@ -180,12 +221,7 @@ async function main() {
   const usedTopics = loadUsedTopics();
 
   for (const blog of blogs) {
-    try {
-      await runForBlog(blog, usedTopics, apiKey);
-    } catch (err) {
-      console.error(`   ❌ [${blog.name}] 처리 중 오류: ${err.message}`);
-      // 한 블로그가 실패해도 다른 블로그는 계속 진행
-    }
+    await runForBlog(blog, usedTopics, apiKey);
   }
 
   saveUsedTopics(usedTopics);
