@@ -9,7 +9,6 @@ module.exports = [
     refreshTokenEnv: "GOOGLE_REFRESH_TOKEN_NUNUMISO",
     // 하루에 이 시각들(한국시간)에 맞춰 각각 한 편씩 예약 발행됩니다.
     publishSchedule: [
-      { hour: 8, minute: 30 },
       { hour: 21, minute: 0 },
     ],
     // 글 끝에 자동으로 붙는 구매 유도 문구. 이 문구를 Blogger 에디터에서 선택해서
@@ -79,8 +78,7 @@ module.exports = [
     refreshTokenEnv: "GOOGLE_REFRESH_TOKEN_PERJUNI",
     // 하루에 이 시각들(한국시간)에 맞춰 각각 한 편씩 예약 발행됩니다.
     publishSchedule: [
-      { hour: 8, minute: 30 },
-      { hour: 21, minute: 0 },
+     { hour: 21, minute: 0 },
     ],
     ctaText: "👉 오늘의 추천 제품 보러가기",
     badgeColor: "#e74c3c",
