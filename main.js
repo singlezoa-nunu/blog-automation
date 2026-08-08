@@ -187,16 +187,21 @@ async function runForBlog(blog, usedTopics, apiKey) {
   const blogId = process.env[blog.blogIdEnv];
   const refreshToken = process.env[blog.refreshTokenEnv];
 
-  let existingTitles = [];
+ let existingTitles = [];
   if (blogId && refreshToken) {
     console.log("   기존 글 목록 조회 중... (주제 중복 방지)");
-    existingTitles = await listAllPostTitles({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      refreshToken,
-      blogId,
-    });
-    console.log(`   기존 글 ${existingTitles.length}개 확인함`);
+    try {
+      existingTitles = await listAllPostTitles({
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        refreshToken,
+        blogId,
+      });
+      console.log(`   기존 글 ${existingTitles.length}개 확인함`);
+    } catch (err) {
+      console.error(`   ❌ 기존 글 목록 조회 실패로 이번 실행에서 [${blog.name}]는 건너뜁니다 (중복 발행 방지): ${err.message}`);
+      return;
+    }
   }
 
   const schedules = blog.publishSchedule && blog.publishSchedule.length > 0 ? blog.publishSchedule : [null];
